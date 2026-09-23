@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desbloquea el Próximo Nivel: Trayecto 10 Años</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Press Start 2P & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pixel: {
+                            bg: '#0b091a',
+                            card: '#16132b',
+                            border: '#332b5e',
+                            accent: '#ff0055',
+                            yellow: '#ffcc00',
+                            green: '#00ff88',
+                            cyan: '#00d9ff',
+                            purple: '#a855f7'
+                        }
+                    },
+                    fontFamily: {
+                        game: ['"Press Start 2P"', 'cursive'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0b091a;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(168, 85, 247, 0.18) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(0, 217, 255, 0.15) 0%, transparent 40%);
+        }
+        
+        .pixel-card {
+            background-color: #16132b;
+            border: 2px solid #332b5e;
+            box-shadow: 0 8px 0 #070510;
+        }
+
+        .pixel-btn {
+            position: relative;
+            transition: all 0.15s ease;
+            box-shadow: 0 5px 0 #070510;
+        }
+
+        .pixel-btn:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #070510;
+        }
+
+        .glow-effect {
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.35);
+        }
+
+        .glow-gold {
+            box-shadow: 0 0 25px rgba(255, 204, 0, 0.5);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b091a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #332b5e;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="text-white font-sans min-h-screen flex flex-col justify-between selection:bg-pixel-accent selection:text-white">
+
+    <!-- Background Canvas for Particles -->
+    <canvas id="bgCanvas" class="fixed inset-0 pointer-events-none z-0 opacity-40"></canvas>
+
+    <!-- Header Navigation -->
+    <header class="relative z-10 w-full max-w-5xl mx-auto px-4 pt-4 pb-2 flex flex-wrap justify-between items-center gap-3">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-pixel-purple/30 rounded-lg flex items-center justify-center text-pixel-yellow text-xl border border-pixel-purple shadow-md">
+                <i class="fa-solid fa-gamepad"></i>
+            </div>
+            <div>
+                <h1 class="font-game text-xs md:text-sm text-pixel-yellow tracking-wider uppercase">Trayecto 10 Años</h1>
+                <p class="text-[11px] text-purple-300 font-semibold">Encuentro 6 — Maestros Comunitarios 2026</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2 md:space-x-4">
+            <!-- Timer Indicator (90 min session) -->
+            <div class="bg-pixel-card border border-purple-500/30 px-3 py-1.5 rounded-lg flex items-center space-x-2 text-xs text-gray-300">
+                <i class="fa-regular fa-clock text-pixel-cyan"></i>
+                <span class="hidden sm:inline">Tiempo Guía:</span>
+                <span id="sessionTimer" class="font-mono text-pixel-cyan font-bold">90 min</span>
+            </div>
+
+            <!-- Audio Toggle Button -->
+            <button id="soundToggleBtn" onclick="toggleSound()" class="px-2.5 py-1.5 bg-pixel-card hover:bg-pixel-border text-xs text-purple-200 rounded-lg border border-purple-500/30 flex items-center space-x-1.5 transition">
+                <i id="soundIcon" class="fa-solid fa-volume-high text-pixel-green"></i>
+                <span id="soundLabel" class="hidden sm:inline">Audio</span>
+            </button>
+
+            <!-- Level Badge Indicator -->
+            <div class="bg-pixel-card border border-pixel-purple px-3 py-1.5 rounded-lg flex items-center space-x-2">
+                <i class="fa-solid fa-trophy text-pixel-yellow text-xs"></i>
+                <span id="headerLevel" class="font-game text-xs text-pixel-green">NIVEL 09</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Interactive Container -->
+    <main class="relative z-10 w-full max-w-4xl mx-auto px-4 py-2 flex-grow flex flex-col justify-center">
+
+        <!-- Progress Bar Card -->
+        <div class="mb-5 bg-pixel-card/90 backdrop-blur-md p-3 md:p-4 rounded-xl border border-purple-500/30 shadow-xl">
+            <div class="flex justify-between items-center mb-1.5">
+                <div class="flex items-center space-x-2">
+                    <span id="missionBadge" class="text-[10px] bg-pixel-purple/30 text-purple-200 px-2.5 py-0.5 rounded border border-purple-500/40 font-game">MISIÓN 0 / 4</span>
+                    <span id="missionTitleText" class="text-xs font-bold text-gray-200 hidden sm:inline">Entrada al Juego</span>
+                </div>
+                <span id="xpText" class="font-game text-xs text-pixel-yellow">0 / 100 XP</span>
+            </div>
+            <div class="w-full bg-gray-950 h-3.5 rounded-full overflow-hidden p-0.5 border border-purple-900">
+                <div id="xpBar" class="h-full bg-gradient-to-r from-purple-600 via-pixel-cyan to-pixel-green rounded-full transition-all duration-500 ease-out" style="width: 5%;"></div>
+            </div>
+        </div>
+
+        <!-- SCREEN 0: MISIÓN 0 - ENTRADA AL JUEGO (5 min) -->
+        <section id="screen-mision0" class="space-y-5">
+            <div class="pixel-card p-6 md:p-8 rounded-2xl relative overflow-hidden text-center shadow-2xl">
+                <div class="inline-block bg-pixel-yellow/10 border border-pixel-yellow text-pixel-yellow px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-4 floating">
+                    <i class="fa-solid fa-crown mr-1"></i> Hacia el Trayecto 2027 (10 Años)
+                </div>
+
+                <h2 class="font-game text-base md:text-xl text-white mb-3 leading-relaxed">
+                    ¡Bienvenidos, Diseñadores del Próximo Nivel!
+                </h2>
+
+                <p class="text-purple-200 text-xs md:text-sm max-w-2xl mx-auto leading-relaxed mb-6">
+                    "Hoy no venimos solamente a evaluar lo que hicimos. Vamos a imaginar qué debería pasar después. El Trayecto cumple 10 años en 2027 y ustedes asumirán el rol de diseñadores de su próximo nivel."
+                </p>
+
+                <div class="bg-black/40 p-4 rounded-xl border border-purple-500/30 mb-6 max-w-xl mx-auto text-left text-xs space-y-2">
+                    <div class="flex items-center space-x-2 text-pixel-cyan font-bold">
+                        <i class="fa-solid fa-compass"></i>
+                        <span>Dinámica del Juego (90 Minutos):</span>
+                    </div>
+                    <p class="text-gray-300 leading-relaxed">
+                        En cada misión: <strong class="text-pixel-yellow">CONVERSAN + DECIDEN + REGISTRAN</strong>. Trabajan primero en subgrupos de forma colaborativa y van ingresando aquí las decisiones para desbloquear el formulario final.
+                    </p>
+                </div>
+
+                <!-- Select Subgroup Name -->
+                <div class="mb-6 max-w-md mx-auto text-left">
+                    <label class="block text-xs font-bold text-purple-300 uppercase mb-2">Nombre de tu Grupo / Colectivo:</label>
+                    <input type="text" id="groupNameInput" placeholder="Ej: Equipo Comunitario Centro" class="w-full bg-black/50 border border-purple-500/50 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pixel-cyan transition">
+                </div>
+
+                <button onclick="startMision1()" class="pixel-btn bg-pixel-green hover:bg-emerald-400 text-gray-950 font-extrabold px-8 py-3.5 rounded-xl font-game text-xs tracking-wider transition uppercase flex items-center justify-center mx-auto space-x-2 glow-effect">
+                    <span>Iniciar Misión 1: El Inventario</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- SCREEN 1: MISIÓN 1 - EL INVENTARIO (15 min) -->
+        <section id="screen-mision1" class="hidden space-y-5">
+            <div class="pixel-card p-5 md:p-7 rounded-2xl relative shadow-2xl">
+                <div class="flex justify-between items-center border-b border-purple-500/30 pb-3 mb-4">
+                    <div>
+                        <span class="bg-purple-900/60 text-pixel-cyan font-game text-[10px] px-2.5 py-1 rounded border border-purple-500/40">MISIÓN 1</span>
+                        <h3 class="font-bold text-white text-base md:text-lg inline-block ml-2">El Inventario</h3>
+                    </div>
+                    <span class="text-xs text-pixel-yellow font-semibold"><i class="fa-solid fa-box-archive mr-1"></i> ¿Qué conservar? (Max 5/cat)</span>
+                </div>
+
+                <p class="text-xs text-gray-300 mb-4">
+                    <em>"El sistema debe actualizarse, pero no queremos perder lo que funciona."</em> Selecciona hasta 5 elementos por categoría que deben seguir formando parte del Trayecto 2027:
+                </p>
+
+                <!-- Category Tabs / Grid -->
+                <div class="space-y-5 mb-6">
+                    <!-- Contenidos (Blue cards) -->
+                    <div>
+                        <h4 class="text-xs font-bold text-pixel-cyan uppercase mb-2 flex items-center">
+                            <i class="fa-solid fa-book-bookmark mr-2"></i> Contenidos a Conservar
+                        </h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs" id="contenidosGrid">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Tecnologías (Green cards) -->
+                    <div>
+                        <h4 class="text-xs font-bold text-pixel-green uppercase mb-2 flex items-center">
+                            <i class="fa-solid fa-laptop-code mr-2"></i> Tecnologías a Conservar
+                        </h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs" id="tecnologiasGrid">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Metodologías (Yellow cards) -->
+                    <div>
+                        <h4 class="text-xs font-bold text-pixel-yellow uppercase mb-2 flex items-center">
+                            <i class="fa-solid fa-chalkboard-user mr-2"></i> Metodologías a Conservar
+                        </h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs" id="metodologiasGrid">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Experiencia Memorable -->
+                <div class="bg-black/30 p-4 rounded-xl border border-purple-500/30 mb-6">
+                    <label class="block text-xs font-bold text-pixel-yellow uppercase mb-1">
+                        <i class="fa-solid fa-star mr-1"></i> Experiencia Memorable:
+                    </label>
+                    <p class="text-[11px] text-gray-400 mb-2">¿Qué experiencia del Trayecto te hizo sentir que realmente aprendiste algo que podías llevar a tu práctica?</p>
+                    <textarea id="expMemorableInput" rows="2" placeholder="Describe brevemente la experiencia memorable del grupo..." class="w-full bg-black/50 border border-purple-500/40 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-pixel-yellow transition"></textarea>
+                </div>
+
+                <div class="flex justify-end">
+                    <button onclick="submitMision1()" class="pixel-btn bg-pixel-cyan hover:bg-cyan-400 text-gray-950 font-extrabold px-6 py-3 rounded-xl font-game text-xs transition uppercase flex items-center space-x-2">
+                        <span>Avanzar a Misión 2</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: MISIÓN 2 - HACKEÁ EL TRAYECTO (15 min) -->
+        <section id="screen-mision2" class="hidden space-y-5">
+            <div class="pixel-card p-5 md:p-7 rounded-2xl relative shadow-2xl">
+                <div class="flex justify-between items-center border-b border-purple-500/30 pb-3 mb-4">
+                    <div>
+                        <span class="bg-rose-900/60 text-pixel-accent font-game text-[10px] px-2.5 py-1 rounded border border-rose-500/40">MISIÓN 2</span>
+                        <h3 class="font-bold text-white text-base md:text-lg inline-block ml-2">Hackeá el Trayecto</h3>
+                    </div>
+                    <span class="text-xs text-pixel-accent font-semibold"><i class="fa-solid fa-bug mr-1"></i> Eliminar / Transformar</span>
+                </div>
+
+                <div class="bg-rose-950/30 border border-rose-500/30 p-3.5 rounded-xl mb-4 text-xs text-purple-200">
+                    <p class="font-bold text-pixel-accent mb-1"><i class="fa-solid fa-terminal mr-1"></i> ¡Permiso para hackear activado!</p>
+                    <p>Detecten aspectos que ya no funcionan. Recuerden la regla del mediador: convertir las críticas en propuestas alternativas ("Sacaría X porque... y pondría Y...").</p>
+                </div>
+
+                <div class="space-y-4 mb-6">
+                    <!-- Item to ELIMINATE -->
+                    <div class="bg-black/40 p-4 rounded-xl border border-rose-500/30 space-y-2">
+                        <h4 class="text-xs font-bold text-pixel-accent uppercase flex items-center">
+                            <i class="fa-solid fa-trash-can mr-2"></i> Elemento a ELIMINAR (Esto ya no debería estar)
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <input type="text" id="eliminarQue" placeholder="¿Qué eliminarían?" class="bg-black/60 border border-gray-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-pixel-accent">
+                            <input type="text" id="eliminarPorQue" placeholder="¿Por qué motivo?" class="bg-black/60 border border-gray-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-pixel-accent">
+                        </div>
+                    </div>
+
+                    <!-- Item to TRANSFORM -->
+                    <div class="bg-black/40 p-4 rounded-xl border border-purple-500/30 space-y-2">
+                        <h4 class="text-xs font-bold text-pixel-purple uppercase flex items-center">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Elemento a TRANSFORMAR (Tiene valor pero necesita otra forma)
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <input type="text" id="transformarQue" placeholder="¿Qué transformarían?" class="bg-black/60 border border-gray-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-pixel-purple">
+                            <input type="text" id="transformarPorQue" placeholder="¿Por qué motivo?" class="bg-black/60 border border-gray-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-pixel-purple">
+                            <input type="text" id="transformarAlternativa" placeholder="¿Qué alternativa pondrían?" class="bg-black/60 border border-gray-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-pixel-purple">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <button onclick="goToScreen('screen-mision1')" class="text-xs text-gray-400 hover:text-white transition">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Volver
+                    </button>
+                    <button onclick="submitMision2()" class="pixel-btn bg-pixel-cyan hover:bg-cyan-400 text-gray-950 font-extrabold px-6 py-3 rounded-xl font-game text-xs transition uppercase flex items-center space-x-2">
+                        <span>Avanzar a Misión 3</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: MISIÓN 3 - DESBLOQUEÁ PORTALES (15 min) -->
+        <section id="screen-mision3" class="hidden space-y-5">
+            <div class="pixel-card p-5 md:p-7 rounded-2xl relative shadow-2xl">
+                <div class="flex justify-between items-center border-b border-purple-500/30 pb-3 mb-4">
+                    <div>
+                        <span class="bg-amber-900/60 text-pixel-yellow font-game text-[10px] px-2.5 py-1 rounded border border-amber-500/40">MISIÓN 3</span>
+                        <h3 class="font-bold text-white text-base md:text-lg inline-block ml-2">Desbloqueá Portales (Hasta 3 por portal)</h3>
+                    </div>
+                    <span class="text-xs text-pixel-yellow font-semibold"><i class="fa-solid fa-door-open mr-1"></i> Necesidades 2027</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <!-- PORTAL 1: Ciudadanía Digital -->
+                    <div class="bg-black/30 p-4 rounded-xl border border-purple-500/30 space-y-2">
+                        <h4 class="text-xs font-bold text-pixel-cyan uppercase flex items-center">
+                            <i class="fa-solid fa-shield-halved mr-2"></i> Portal 1: Ciudadanía Digital
+                        </h4>
+                        <p class="text-[11px] text-gray-400">¿Qué contenidos de CD son indispensables para 2027 y por qué?</p>
+                        <textarea id="portal1Input" rows="2" placeholder="Ej: Privacidad, desinformación, IA y sesgos..." class="w-full bg-black/60 border border-gray-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-pixel-cyan"></textarea>
+                    </div>
+
+                    <!-- PORTAL 2: Tecnologías -->
+                    <div class="bg-black/30 p-4 rounded-xl border border-purple-500/30 space-y-2">
+                        <h4 class="text-xs font-bold text-pixel-green uppercase flex items-center">
+                            <i class="fa-solid fa-microchip mr-2"></i> Portal 2: Tecnologías (Uso Pedagógico)
+                        </h4>
+                        <p class="text-[11px] text-gray-400">¿Qué te gustaría poder hacer pedagógicamente con ellas?</p>
+                        <textarea id="portal2Input" rows="2" placeholder="Ej: Con Micro:bit diseñar soluciones ambientales con alumnos..." class="w-full bg-black/60 border border-gray-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-pixel-green"></textarea>
+                    </div>
+
+                    <!-- PORTAL 3: Jugar para Aprender -->
+                    <div class="bg-black/30 p-4 rounded-xl border border-purple-500/30 space-y-2">
+                        <h4 class="text-xs font-bold text-pixel-yellow uppercase flex items-center">
+                            <i class="fa-solid fa-dice mr-2"></i> Portal 3: Jugar para Aprender
+                        </h4>
+                        <p class="text-[11px] text-gray-400">¿Qué debería aprender un docente para diseñar ABJ / Gamificación?</p>
+                        <textarea id="portal3Input" rows="2" placeholder="Ej: Escape rooms pedagógicos, narrativas gamificadas..." class="w-full bg-black/60 border border-gray-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-pixel-yellow"></textarea>
+                    </div>
+
+                    <!-- PORTAL 4: Comunidad -->
+                    <div class="bg-black/30 p-4 rounded-xl border border-purple-500/30 space-y-2">
+                        <h4 class="text-xs font-bold text-pixel-purple uppercase flex items-center">
+                            <i class="fa-solid fa-people-roof mr-2"></i> Portal 4: Comunidad & Familias
+                        </h4>
+                        <p class="text-[11px] text-gray-400">¿Cómo conectar tecnología, escuela, familias y comunidad?</p>
+                        <textarea id="portal4Input" rows="2" placeholder="Ej: Talleres familiares interactivos, muestras digitales..." class="w-full bg-black/60 border border-gray-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-pixel-purple"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <button onclick="goToScreen('screen-mision2')" class="text-xs text-gray-400 hover:text-white transition">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Volver
+                    </button>
+                    <button onclick="submitMision3()" class="pixel-btn bg-pixel-cyan hover:bg-cyan-400 text-gray-950 font-extrabold px-6 py-3 rounded-xl font-game text-xs transition uppercase flex items-center space-x-2">
+                        <span>Avanzar a Recarga</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN RECARGA: INTERMEDIO (10 min) -->
+        <section id="screen-recarga" class="hidden space-y-5">
+            <div class="pixel-card p-6 md:p-8 rounded-2xl relative text-center shadow-2xl">
+                <div class="inline-block bg-pixel-green/10 border border-pixel-green text-pixel-green px-4 py-1.5 rounded-full text-xs font-bold font-game uppercase tracking-widest mb-4 floating">
+                    <i class="fa-solid fa-bolt mr-1"></i> RECARGANDO PUNTOS DE ENERGÍA...
+                </div>
+
+                <h2 class="font-game text-sm md:text-lg text-white mb-3">
+                    Consolidando Descubrimientos
+                </h2>
+
+                <p class="text-xs md:text-sm text-purple-200 max-w-xl mx-auto mb-6">
+                    <em>"Ya desbloquearon muchas ideas. Ahora viene el desafío más importante: diseñar el próximo nivel."</em>
+                </p>
+
+                <!-- Consolidación Visual -->
+                <div class="bg-black/50 p-4 rounded-xl border border-purple-500/30 max-w-2xl mx-auto text-left space-y-3 mb-6 text-xs">
+                    <h4 class="font-bold text-pixel-yellow uppercase border-b border-gray-800 pb-2">Resumen de Insumos Activos:</h4>
+                    <div id="recargaSummary" class="space-y-1.5 text-gray-300">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <button onclick="goToMision4()" class="pixel-btn bg-pixel-green hover:bg-emerald-400 text-gray-950 font-extrabold px-8 py-3.5 rounded-xl font-game text-xs tracking-wider transition uppercase flex items-center justify-center mx-auto space-x-2 glow-effect">
+                    <span>Diseñá el Módulo TF 2027 (Misión 4)</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- SCREEN 4: MISIÓN 4 - DISEÑÁ EL PRÓXIMO NIVEL TF 2027 (20 min) -->
+        <section id="screen-mision4" class="hidden space-y-5">
+            <div class="pixel-card p-5 md:p-7 rounded-2xl relative shadow-2xl">
+                <div class="flex justify-between items-center border-b border-purple-500/30 pb-3 mb-4">
+                    <div>
+                        <span class="bg-emerald-900/60 text-pixel-green font-game text-[10px] px-2.5 py-1 rounded border border-emerald-500/40">MISIÓN 4</span>
+                        <h3 class="font-bold text-white text-base md:text-lg inline-block ml-2">Diseñá un Módulo del Trayecto 2027</h3>
+                    </div>
+                    <span class="text-xs text-pixel-green font-semibold"><i class="fa-solid fa-pen-ruler mr-1"></i> Co-Diseño Curricular</span>
+                </div>
+
+                <!-- Form Tablero del Módulo -->
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-bold text-pixel-yellow uppercase mb-1">1. Nombre del Módulo:</label>
+                        <input type="text" id="modNombre" placeholder="Ej: Laboratorio Gamificado de Ciudadanía y Micro:bit" class="w-full bg-black/60 border border-purple-500/40 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-pixel-yellow">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-pixel-cyan uppercase mb-1">2. Foco Central (Carta en el centro):</label>
+                            <input type="text" id="modFoco" placeholder="Ej: Pensamiento Computacional / IA" class="w-full bg-black/60 border border-purple-500/40 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-pixel-cyan">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-pixel-purple uppercase mb-1">3. Aliados (Cartas de potenciación):</label>
+                            <input type="text" id="modAliados" placeholder="Ej: Gamificación + Talleres con Familias" class="w-full bg-black/60 border border-purple-500/40 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-pixel-purple">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-pixel-green uppercase mb-1">4. Acciones Concretas del MC:</label>
+                            <p class="text-[10px] text-gray-400 mb-1">¿Qué va a hacer? (resolver, investigar, programar, crear, etc.)</p>
+                            <input type="text" id="modAcciones" placeholder="Ej: Resolver un desafío y programar un prototipo" class="w-full bg-black/60 border border-purple-500/40 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-pixel-green">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-pixel-yellow uppercase mb-1">5. ¿Qué se lleva el docente?:</label>
+                            <p class="text-[10px] text-gray-400 mb-1">(Prototipo, secuencia, juego, misión, proyecto...)</p>
+                            <input type="text" id="modEntregable" placeholder="Ej: Una secuencia pedagógica lista para el aula" class="w-full bg-black/60 border border-purple-500/40 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-pixel-yellow">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-pixel-cyan uppercase mb-1">6. ¿Dónde lo aplicará? (Contexto de impacto):</label>
+                        <select id="modContexto" class="w-full bg-black/60 border border-purple-500/40 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-pixel-cyan">
+                            <option value="Aula / Grupo de estudiantes">Aula / Grupo de estudiantes</option>
+                            <option value="Comunidad local">Comunidad local</option>
+                            <option value="Grupo de familias">Grupo de familias</option>
+                            <option value="Entorno Virtual CREA">Entorno Virtual CREA</option>
+                            <option value="Colectivo docente / Institucional">Colectivo docente / Institucional</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <button onclick="goToScreen('screen-recarga')" class="text-xs text-gray-400 hover:text-white transition">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Volver
+                    </button>
+                    <button onclick="submitMision4()" class="pixel-btn bg-gradient-to-r from-pixel-yellow to-pixel-green hover:brightness-110 text-gray-950 font-extrabold px-7 py-3 rounded-xl font-game text-xs transition uppercase flex items-center space-x-2 glow-gold">
+                        <span>Finalizar Misiones & Priorizar</span>
+                        <i class="fa-solid fa-trophy"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 5: LEVEL 10 UNLOCKED & FINAL REGISTRATION -->
+        <section id="screen-unlocked" class="hidden space-y-5">
+            <div class="pixel-card p-6 md:p-8 rounded-2xl text-center relative overflow-hidden shadow-2xl border-4 border-pixel-green glow-effect">
+                
+                <!-- Level 10 Emblem -->
+                <div class="relative inline-block mb-4">
+                    <div class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-tr from-pixel-green via-teal-400 to-pixel-yellow p-1 mx-auto floating">
+                        <div class="w-full h-full bg-pixel-card rounded-full flex flex-col items-center justify-center border-2 border-black">
+                            <i class="fa-solid fa-crown text-pixel-yellow text-2xl mb-1"></i>
+                            <span class="font-game text-[10px] text-purple-300">NIVEL</span>
+                            <span class="font-game text-xl md:text-2xl text-pixel-green font-extrabold">10</span>
+                        </div>
+                    </div>
+                    <div class="absolute -bottom-1 -right-1 bg-pixel-yellow text-gray-950 font-bold text-[9px] font-game px-2 py-0.5 rounded-full border border-black shadow">
+                        10 AÑOS
+                    </div>
+                </div>
+
+                <h2 class="font-game text-lg md:text-2xl text-pixel-green mb-2 uppercase tracking-wider">
+                    ¡Nivel 10 Desbloqueado!
+                </h2>
+
+                <p class="text-white text-xs md:text-sm font-semibold max-w-xl mx-auto mb-1">
+                    ¡Felicitaciones! Has completado la experiencia participativa de co-diseño del Trayecto 2027.
+                </p>
+
+                <p class="text-purple-200 text-xs max-w-lg mx-auto mb-6">
+                    Paso final e imprescindible: <strong>Copia el resumen de tus respuestas y pégalo en el Formulario Oficial de Google</strong> para consolidar las decisiones a nivel nacional.
+                </p>
+
+                <!-- Generated Summary Area -->
+                <div class="bg-black/60 p-4 rounded-xl border border-pixel-green/40 max-w-2xl mx-auto mb-6 text-left space-y-2">
+                    <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                        <span class="font-bold text-xs text-pixel-yellow flex items-center">
+                            <i class="fa-solid fa-clipboard-list mr-2"></i> Resumen Generado para Formulario:
+                        </span>
+                        <button onclick="copySummary()" class="text-[11px] bg-pixel-purple/40 hover:bg-pixel-purple text-white px-2.5 py-1 rounded border border-purple-400/40 transition">
+                            <i class="fa-solid fa-copy mr-1"></i> <span id="copyBtnText">Copiar Resumen</span>
+                        </button>
+                    </div>
+                    <textarea id="finalSummaryText" readonly rows="5" class="w-full bg-transparent text-[11px] text-gray-300 font-mono focus:outline-none resize-none"></textarea>
+                </div>
+
+                <!-- Main Link to Google Form -->
+                <div class="max-w-xl mx-auto mb-6">
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSc0TJV6rG7yXRkzDxislokXdV5pWiBxpVAD6zfcfw8cwIJJGg/viewform?usp=dialog" 
+                       target="_blank" 
+                       rel="noopener noreferrer" 
+                       class="pixel-btn block w-full text-center bg-gradient-to-r from-pixel-green to-emerald-400 hover:from-emerald-400 hover:to-pixel-green text-gray-950 font-extrabold py-3.5 px-6 rounded-xl font-game text-xs md:text-sm uppercase tracking-wider transition shadow-lg glow-effect">
+                        <i class="fa-solid fa-file-pen mr-2"></i> Abrir Formulario Oficial de Google
+                    </a>
+                </div>
+
+                <!-- Secondary Action -->
+                <button onclick="restartGame()" class="text-xs text-gray-400 hover:text-white transition flex items-center justify-center mx-auto space-x-1.5">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Volver a Iniciar Juego</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Toast Message Container -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-pixel-card border border-pixel-green text-pixel-green px-4 py-2.5 rounded-xl shadow-2xl flex items-center space-x-2 text-xs font-bold">
+        <i class="fa-solid fa-circle-check text-base"></i>
+        <span id="toastMessage">¡Guardado!</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="relative z-10 w-full max-w-5xl mx-auto px-4 py-4 text-center text-[11px] text-purple-300/50 border-t border-purple-900/30 mt-4">
+        <p>Trayecto de Formación para Maestros Comunitarios 2026 — 10 Años de Impacto (2027)</p>
+    </footer>
+
+    <script>
+        // Game State Variables
+        const gameState = {
+            groupName: '',
+            level: 9,
+            xp: 0,
+            soundEnabled: true,
+            mision1: {
+                contenidos: [],
+                tecnologias: [],
+                metodologias: [],
+                expMemorable: ''
+            },
+            mision2: {
+                eliminarQue: '',
+                eliminarPorQue: '',
+                transformarQue: '',
+                transformarPorQue: '',
+                transformarAlternativa: ''
+            },
+            mision3: {
+                portal1: '',
+                portal2: '',
+                portal3: '',
+                portal4: ''
+            },
+            mision4: {
+                nombre: '',
+                foco: '',
+                aliados: '',
+                acciones: '',
+                entregable: '',
+                contexto: ''
+            }
+        };
+
+        // Data arrays for Mission 1 cards based on Encuentro 6 document
+        const M1_DATA = {
+            contenidos: [
+                "Huella digital", "Datos personales", "Análisis de la información",
+                "Participación digital", "Pensamiento computacional", "IA y sesgos algorítmicos"
+            ],
+            tecnologias: [
+                "PC / Laptops", "Micro:bit", "Minecraft Education",
+                "Scratch", "Audiovisual", "Herramientas de IA"
+            ],
+            metodologias: [
+                "Metodologías activas (Gamificación)", "Videojuegos / ABJ", "Talleres + acompañamiento",
+                "Intercambio entre pares", "Prototipado digital", "Actividades en el medio"
+            ]
+        };
+
+        // Web Audio Synthesizer
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!gameState.soundEnabled) return;
+            try {
+                initAudio();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'click') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(350, now);
+                    osc.frequency.exponentialRampToValueAtTime(700, now + 0.04);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+                    osc.start(now);
+                    osc.stop(now + 0.04);
+                } else if (type === 'select') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.06);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'fanfare') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const noteOsc = audioCtx.createOscillator();
+                        const noteGain = audioCtx.createGain();
+                        noteOsc.type = 'sine';
+                        noteOsc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                        noteGain.gain.setValueAtTime(0.15, now + idx * 0.1);
+                        noteGain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.25);
+                        noteOsc.connect(noteGain);
+                        noteGain.connect(audioCtx.destination);
+                        noteOsc.start(now + idx * 0.1);
+                        noteOsc.stop(now + idx * 0.1 + 0.25);
+                    });
+                }
+            } catch (e) {
+                console.log("Audio error:", e);
+            }
+        }
+
+        function toggleSound() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            const soundIcon = document.getElementById('soundIcon');
+            const soundLabel = document.getElementById('soundLabel');
+            
+            if (gameState.soundEnabled) {
+                soundIcon.className = "fa-solid fa-volume-high text-pixel-green";
+                soundLabel.innerText = "Audio";
+                playSound('select');
+            } else {
+                soundIcon.className = "fa-solid fa-volume-xmark text-gray-500";
+                soundLabel.innerText = "Mute";
+            }
+        }
+
+        // Render Mission 1 Selectable Cards
+        function renderMision1Cards() {
+            const populate = (items, containerId, categoryKey, activeColorClass) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+                items.forEach(item => {
+                    const isSelected = gameState.mision1[categoryKey].includes(item);
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = `p-2.5 rounded-lg border text-left transition flex items-center justify-between ${
+                        isSelected 
+                        ? `${activeColorClass} bg-purple-900/50 font-bold shadow` 
+                        : 'border-purple-500/20 bg-black/30 hover:border-purple-500/50 text-gray-300'
+                    }`;
+                    btn.innerHTML = `
+                        <span>${item}</span>
+                        <i class="fa-solid ${isSelected ? 'fa-check-circle' : 'fa-circle-plus'} text-xs"></i>
+                    `;
+                    btn.onclick = () => toggleM1Item(categoryKey, item);
+                    container.appendChild(btn);
+                });
+            };
+
+            populate(M1_DATA.contenidos, 'contenidosGrid', 'contenidos', 'border-pixel-cyan text-pixel-cyan');
+            populate(M1_DATA.tecnologias, 'tecnologiasGrid', 'tecnologias', 'border-pixel-green text-pixel-green');
+            populate(M1_DATA.metodologias, 'metodologiasGrid', 'metodologias', 'border-pixel-yellow text-pixel-yellow');
+        }
+
+        function toggleM1Item(catKey, item) {
+            playSound('select');
+            const list = gameState.mision1[catKey];
+            const index = list.indexOf(item);
+            if (index > -1) {
+                list.splice(index, 1);
+            } else {
+                if (list.length >= 5) {
+                    showToast("Máximo 5 elementos por categoría");
+                    return;
+                }
+                list.push(item);
+            }
+            renderMision1Cards();
+        }
+
+        // Navigation & Screen Control
+        function goToScreen(screenId) {
+            playSound('click');
+            const screens = ['screen-mision0', 'screen-mision1', 'screen-mision2', 'screen-mision3', 'screen-recarga', 'screen-mision4', 'screen-unlocked'];
+            screens.forEach(s => document.getElementById(s).classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function updateXP(amount, misionText, badgeText) {
+            gameState.xp = amount;
+            document.getElementById('xpBar').style.width = `${amount}%`;
+            document.getElementById('xpText').innerText = `${amount} / 100 XP`;
+            document.getElementById('missionBadge').innerText = badgeText;
+            document.getElementById('missionTitleText').innerText = misionText;
+        }
+
+        // Start Mission 1
+        function startMision1() {
+            const groupInput = document.getElementById('groupNameInput').value.trim();
+            gameState.groupName = groupInput || "Equipo Maestro Comunitario";
+            updateXP(20, "El Inventario", "MISIÓN 1 / 4");
+            renderMision1Cards();
+            goToScreen('screen-mision1');
+        }
+
+        // Submit Mission 1
+        function submitMision1() {
+            gameState.mision1.expMemorable = document.getElementById('expMemorableInput').value.trim();
+            updateXP(40, "Hackeá el Trayecto", "MISIÓN 2 / 4");
+            goToScreen('screen-mision2');
+        }
+
+        // Submit Mission 2
+        function submitMision2() {
+            gameState.mision2.eliminarQue = document.getElementById('eliminarQue').value.trim();
+            gameState.mision2.eliminarPorQue = document.getElementById('eliminarPorQue').value.trim();
+            gameState.mision2.transformarQue = document.getElementById('transformarQue').value.trim();
+            gameState.mision2.transformarPorQue = document.getElementById('transformarPorQue').value.trim();
+            gameState.mision2.transformarAlternativa = document.getElementById('transformarAlternativa').value.trim();
+
+            updateXP(60, "Desbloqueá Portales", "MISIÓN 3 / 4");
+            goToScreen('screen-mision3');
+        }
+
+        // Submit Mission 3
+        function submitMision3() {
+            gameState.mision3.portal1 = document.getElementById('portal1Input').value.trim();
+            gameState.mision3.portal2 = document.getElementById('portal2Input').value.trim();
+            gameState.mision3.portal3 = document.getElementById('portal3Input').value.trim();
+            gameState.mision3.portal4 = document.getElementById('portal4Input').value.trim();
+
+            // Populate Recarga Summary
+            const summaryDiv = document.getElementById('recargaSummary');
+            summaryDiv.innerHTML = `
+                <p><strong>• Contenidos a conservar:</strong> ${gameState.mision1.contenidos.join(', ') || 'Ninguno seleccionado'}</p>
+                <p><strong>• Tecnologías a conservar:</strong> ${gameState.mision1.tecnologias.join(', ') || 'Ninguna seleccionada'}</p>
+                <p><strong>• Metodologías a conservar:</strong> ${gameState.mision1.metodologias.join(', ') || 'Ninguna seleccionada'}</p>
+                <p><strong>• Transformación propuesta:</strong> ${gameState.mision2.transformarQue ? `${gameState.mision2.transformarQue} ➔ ${gameState.mision2.transformarAlternativa}` : 'Sin cambios registradas'}</p>
+            `;
+
+            updateXP(75, "Recarga de Energía", "INTERMEDIO");
+            goToScreen('screen-recarga');
+        }
+
+        // Go to Mission 4
+        function goToMision4() {
+            updateXP(85, "Diseñá el Módulo 2027", "MISIÓN 4 / 4");
+            goToScreen('screen-mision4');
+        }
+
+        // Submit Mission 4 & Final Unlock
+        function submitMision4() {
+            gameState.mision4.nombre = document.getElementById('modNombre').value.trim();
+            gameState.mision4.foco = document.getElementById('modFoco').value.trim();
+            gameState.mision4.aliados = document.getElementById('modAliados').value.trim();
+            gameState.mision4.acciones = document.getElementById('modAcciones').value.trim();
+            gameState.mision4.entregable = document.getElementById('modEntregable').value.trim();
+            gameState.mision4.contexto = document.getElementById('modContexto').value;
+
+            // Generate Final Summary Text for Google Form Clipboard
+            const summaryText = 
+`[EQUIPO/GRUPO]: ${gameState.groupName}
+
+[MISIÓN 1 - CONSERVAR]:
+- Contenidos: ${gameState.mision1.contenidos.join(', ') || 'N/A'}
+- Tecnologías: ${gameState.mision1.tecnologias.join(', ') || 'N/A'}
+- Metodologías: ${gameState.mision1.metodologias.join(', ') || 'N/A'}
+- Exp. Memorable: ${gameState.mision1.expMemorable || 'N/A'}
+
+[MISIÓN 2 - HACKEAR]:
+- Eliminar: ${gameState.mision2.eliminarQue} (Motivo: ${gameState.mision2.eliminarPorQue})
+- Transformar: ${gameState.mision2.transformarQue} ➔ Alternativa: ${gameState.mision2.transformarAlternativa}
+
+[MISIÓN 3 - PORTALES]:
+- Ciudadanía Digital: ${gameState.mision3.portal1 || 'N/A'}
+- Tecnologías (Uso): ${gameState.mision3.portal2 || 'N/A'}
+- Jugar para Aprender: ${gameState.mision3.portal3 || 'N/A'}
+- Comunidad: ${gameState.mision3.portal4 || 'N/A'}
+
+[MISIÓN 4 - MÓDULO 2027]:
+- Nombre del Módulo: ${gameState.mision4.nombre || 'Módulo Co-diseñado'}
+- Foco Central: ${gameState.mision4.foco || 'N/A'}
+- Aliados: ${gameState.mision4.aliados || 'N/A'}
+- Acciones Docente: ${gameState.mision4.acciones || 'N/A'}
+- Se lleva (Entregable): ${gameState.mision4.entregable || 'N/A'}
+- Contexto de Aplicación: ${gameState.mision4.contexto}`;
+
+            document.getElementById('finalSummaryText').value = summaryText;
+
+            // Unlock Level 10
+            gameState.level = 10;
+            updateXP(100, "¡NIVEL 10 DESBLOQUEADO!", "NIVEL MÁXIMO");
+            document.getElementById('headerLevel').innerText = "NIVEL 10";
+            document.getElementById('headerLevel').className = "font-game text-xs text-pixel-yellow font-extrabold";
+
+            playSound('fanfare');
+            goToScreen('screen-unlocked');
+
+            // Trigger Confetti
+            if (typeof confetti === 'function') {
+                confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+            }
+        }
+
+        // Copy Summary to Clipboard
+        function copySummary() {
+            playSound('click');
+            const summaryArea = document.getElementById('finalSummaryText');
+            summaryArea.select();
+            document.execCommand('copy');
+
+            const btnText = document.getElementById('copyBtnText');
+            btnText.innerText = "¡Copiado!";
+            setTimeout(() => { btnText.innerText = "Copiar Resumen"; }, 3000);
+
+            showToast("Resumen copiado al portapapeles");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function restartGame() {
+            playSound('click');
+            gameState.level = 9;
+            gameState.mision1.contenidos = [];
+            gameState.mision1.tecnologias = [];
+            gameState.mision1.metodologias = [];
+            document.getElementById('headerLevel').innerText = "NIVEL 09";
+            document.getElementById('headerLevel').className = "font-game text-xs text-pixel-green";
+            updateXP(0, "Entrada al Juego", "MISIÓN 0 / 4");
+            goToScreen('screen-mision0');
+        }
+
+        // Canvas Particles BG Animation
+        window.onload = function() {
+            const canvas = document.getElementById('bgCanvas');
+            const ctx = canvas.getContext('2d');
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const particles = Array.from({ length: 35 }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2.5 + 1,
+                speedY: Math.random() * 0.4 + 0.1,
+                opacity: Math.random() * 0.7 + 0.3,
+                color: Math.random() > 0.5 ? '#00d9ff' : '#a855f7'
+            }));
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = p.opacity;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+                    p.y -= p.speedY;
+                    if (p.y < 0) {
+                        p.y = canvas.height;
+                        p.x = Math.random() * canvas.width;
+                    }
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        };
+    </script>
+</body>
+</html>
